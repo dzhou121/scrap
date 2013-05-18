@@ -7,4 +7,4 @@ Production Deployment
 For CentOS, Redhat
 Install dependencies::
 
-    yum install lib-
+    yum install libevent-devel

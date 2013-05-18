@@ -7,6 +7,10 @@ requires = [
     'lxml',
     'cssselect',
     'redis',
+    'simplejson',
+    'gevent',
+    'nose',
+    'mox',
 ]
 
 

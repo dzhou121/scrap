@@ -4,10 +4,12 @@
     <title>Search links - Scrap</title>
     <meta charset="utf-8">
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/jquery-1.9.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   </head>
   <body>
     <div class="container" style="margin-top: 30px;">
-      <form class="form-horizontal" method="POST" action="">
+      <form class="form-horizontal well" method="POST" id="search">
         <div class="control-group">
           <label class="control-label" for="Keyword">Keyword</label>
           <div class="controls">
@@ -23,22 +25,23 @@
         <div class="control-group">
           <div class="controls">
             <label class="checkbox">
-              <input type="checkbox"> Google
+              <input type="checkbox" value="Google" checked> Google
             </label>
             <label class="checkbox">
-              <input type="checkbox"> Baidu
+              <input type="checkbox" value="Baidu" checked> Baidu
             </label>
             <label class="checkbox">
-              <input type="checkbox"> Bing
+              <input type="checkbox" value="Bing" checked> Bing
             </label>
             <button type="submit" class="btn">Search</button>
           </div>
         </div>
       </form>
-      <div>
-        {% for link in links %}
-        {{ link.url }} {{ link.rank }} <br>
-        {% endfor %}
+      <div id="Google">
+      </div>
+      <div id="Baidu">
+      </div>
+      <div id="Bing">
       </div>
     </div>
   </body>
