@@ -1,0 +1,9 @@
+*.pyc
+*.sw*
+*.py~
+build/*
+build-stamp
+scrap.egg-info
+dist/*
+*.un~
+.venv/*

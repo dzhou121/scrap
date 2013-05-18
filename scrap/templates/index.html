@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Search links - Scrap</title>
+    <meta charset="utf-8">
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container" style="margin-top: 30px;">
+      <form class="form-horizontal" method="POST" action="">
+        <div class="control-group">
+          <label class="control-label" for="Keyword">Keyword</label>
+          <div class="controls">
+            <input type="text" id="keyword" name="keyword" value="{{ keyword }}" placeholder="Put your keyword">
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="domain">Domain</label>
+          <div class="controls">
+            <input type="text" id="domain" name="domain" value="{{ domain }}" placeholder="Put your domain">
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="controls">
+            <label class="checkbox">
+              <input type="checkbox"> Google
+            </label>
+            <label class="checkbox">
+              <input type="checkbox"> Baidu
+            </label>
+            <label class="checkbox">
+              <input type="checkbox"> Bing
+            </label>
+            <button type="submit" class="btn">Search</button>
+          </div>
+        </div>
+      </form>
+      <div>
+        {% for link in links %}
+        {{ link.url }} {{ link.rank }} <br>
+        {% endfor %}
+      </div>
+    </div>
+  </body>
+</html>
+
