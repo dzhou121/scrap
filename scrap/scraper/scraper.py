@@ -5,13 +5,11 @@ import gevent
 import requests
 import urlparse
 import urllib
+import redis
+import simplejson as json
 from lxml import html
-from scrap.cache import cache
+from scrap import settings
 from scrap.utils import chunks
-
-MAX_PAGES = 20
-CONCURRENCY = 20
-CACHE_DURATION = 86400
 
 
 class Scraper(object):
@@ -31,33 +29,48 @@ class Scraper(object):
         self.query_string = query_string
         self.page_string = page_string
         self.search_css = search_css
+        self.redis_conn = redis.Redis(host=settings.REDIS_HOST,
+                                      port=settings.REDIS_PORT,
+                                      db=settings.REDIS_DB,
+                                      password=settings.REDIS_PW)
+        params_dict = {
+            'search_engine': search_engine,
+            'keyword': keyword,
+            'domain': domain
+        }
+        self.scrap_task_status = settings.SCRAP_TASK_STATUS % params_dict
+        self.scrap_task_result = settings.SCRAP_TASK_RESULT % params_dict
 
-    @cache(CACHE_DURATION)
-    def get_links(self, max_pages=MAX_PAGES):
+    def get_links_task(self, max_pages=settings.MAX_PAGES):
         """
         Use gevent to download and parse search pages
         so that the http requests does not block the process
         """
+        if self.redis_conn.get(self.scrap_task_status) is not None:
+            return
+
+        self.redis_conn.set(self.scrap_task_status, 'pending')
+
         jobs = [gevent.spawn(self._get_links, i * 10)
                 for i in xrange(max_pages)]
         # split jobs into trunks based on the concurrency
-        job_chunks = chunks(jobs, CONCURRENCY)
+        job_chunks = chunks(jobs, settings.CONCURRENCY)
         for jobs in job_chunks:
             gevent.joinall(jobs)
 
-        links = []
-        for jobs in job_chunks:
-            for job in jobs:
-                links += job.value
-        return links
+        self.redis_conn.set(self.scrap_task_status, 'ok')
+        self.redis_conn.expire(self.scrap_task_status, settings.CACHE_DURATION)
+        self.redis_conn.expire(self.scrap_task_result, settings.CACHE_DURATION)
 
     def _get_links(self, page):
         try:
             html_text = self._get_html(page)
         except requests.ConnectionError:
-            return [{'url': 'DNS error or connection refused', 'rank': 0}]
+            return self._store_link(
+                {'rank': 0, 'url': 'DNS error or connection refused'})
         except requests.Timeout:
-            return [{'url': 'Request times out', 'rank': 0}]
+            return self._store_link(
+                {'rank': 0, 'url': 'Request times out'})
         html_tree = html.fromstring(html_text)
         hyperlinks = html_tree.cssselect(self.search_css)
         # gevent is used here because for Baidu, it needs to get the actual
@@ -65,22 +78,32 @@ class Scraper(object):
         jobs = [gevent.spawn(self._parse_hyperlink, hyperlink, index, page)
                 for index, hyperlink in enumerate(hyperlinks)]
         # split jobs into trunks based on the concurrency
-        job_chunks = chunks(jobs, CONCURRENCY)
+        job_chunks = chunks(jobs, settings.CONCURRENCY)
         for jobs in job_chunks:
             gevent.joinall(jobs)
 
-        links = []
-        for jobs in job_chunks:
-            links += [job.value for job in jobs]
-        links = [link for link in links if self.check_link(link['url'])]
-        return links
-
     def _parse_hyperlink(self, hyperlink, index, page):
+        """ get the href from the lxml html tree object, parse the href,
+        and then check if the link belongs to the domain
+        and store the one that do
+        """
         href = hyperlink.get('href')
-        return {
-            'url': self.parse_href(href),
-            'rank': index + 1 + page
+        url = self.parse_href(href)
+        if not self.check_link(url):
+            return None
+
+        rank = index + 1 + page
+        link = {
+            'rank': rank,
+            'url': url,
         }
+        return self._store_link(link)
+
+    def _store_link(self, link):
+        """ Store the link result in Redis """
+        link = json.dumps(link)
+        self.redis_conn.sadd(self.scrap_task_result, link)
+        return link
 
     def _get_html(self, page):
         """download the result html from search engine"""
@@ -107,7 +130,7 @@ class Scraper(object):
 class GoogleScraper(Scraper):
 
     def __init__(self, keyword, domain):
-        search_engine = 'Google'
+        search_engine = 'google'
         endpoint = 'https://www.google.com/search'
         query_string = 'q'
         page_string = 'start'
@@ -128,7 +151,7 @@ class GoogleScraper(Scraper):
 class BaiduScraper(Scraper):
 
     def __init__(self, keyword, domain):
-        search_engine = 'Baidu'
+        search_engine = 'baidu'
         endpoint = 'http://www.baidu.com/s'
         query_string = 'wd'
         page_string = 'pn'
@@ -153,7 +176,7 @@ class BaiduScraper(Scraper):
 class BingScraper(Scraper):
 
     def __init__(self, keyword, domain):
-        search_engine = 'Bing'
+        search_engine = 'bing'
         endpoint = 'http://www.bing.com/search'
         query_string = 'q'
         page_string = 'first'
