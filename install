@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Install dependencies
+yum install libevent-devel redis -y
+
+# Create scrap user
+if [ ! id -u scrap >/dev/null 2>&1 ]; then
+    useradd -M -u 6000 -s /bin/nologin scrap
+fi
+
+
+# Install python package
+python setup.py install
+
+# Copy init scripts
+if [ ! -f /etc/init.d/scrap-api ]; then
+    cp ./etc/init.d/scrap-api /etc/init/
+fi
+if [ ! -f /etc/init.d/scrap-scraper ]; then
+    cp ./etc/init.d/scrap-scraper /etc/init/
+fi
+
+# Start service
+/etc/init.d/redis start
+/etc/init.d/scrap-api start
+/etc/init.d/scrap-scraper start
+
+echo "All done!"

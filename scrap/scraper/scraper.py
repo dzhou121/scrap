@@ -85,7 +85,7 @@ class Scraper(object):
     def _parse_hyperlink(self, hyperlink, index, page):
         """ get the href from the lxml html tree object, parse the href,
         and then check if the link belongs to the domain
-        and store the one that do
+        and store the one that does
         """
         href = hyperlink.get('href')
         url = self.parse_href(href)
@@ -118,6 +118,7 @@ class Scraper(object):
     def check_link(self, link):
         """Check if the domain belongs to the link"""
         hostname = urlparse.urlparse(link).hostname
+
         if hostname and (
             hostname.split('.')[-(len(self.domain.split('.'))):] ==
             self.domain.split('.')
@@ -131,7 +132,7 @@ class GoogleScraper(Scraper):
 
     def __init__(self, keyword, domain):
         search_engine = 'google'
-        endpoint = 'https://www.google.com/search'
+        endpoint = 'http://www.google.com/search'
         query_string = 'q'
         page_string = 'start'
         search_css = 'li.g h3.r a'
@@ -143,9 +144,11 @@ class GoogleScraper(Scraper):
         """The destination url in the search results is after url="""
         queries = urlparse.urlparse(href).query.split('&')
         for query in queries:
-            if query.startswith('url='):
-                url = query[4:]
+            if query.startswith('q='):
+                url = query[2:]
                 return urllib.unquote(url)
+
+        return ''
 
 
 class BaiduScraper(Scraper):
@@ -165,7 +168,13 @@ class BaiduScraper(Scraper):
         The destination url is encoded,
         and we need to find the actual url from the redirect
         """
-        r = requests.get(link, allow_redirects=False)
+        try:
+            r = requests.get(link, allow_redirects=False)
+        except requests.ConnectionError:
+            return ''
+        except requests.Timeout:
+            return ''
+
         url = r.headers.get('location')
         # sometimes Baidu return unencoded url
         if url is None:

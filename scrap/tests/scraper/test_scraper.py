@@ -48,19 +48,19 @@ class GoogleScraperTest(test.TestCase):
             <body>
                 <li class="g">
                     <h3 class="r">
-                        <a href="/url?url=http%3A%2F%2Ftest.com%2F">link 1</a>
+                        <a href="/url?q=http%3A%2F%2Ftest.com%2F">link 1</a>
                     </h3>
                 </li>
                 <li class="g">
                     <h3 class="r">
-                        <a href="/url?url=http%3A%2F%2Ftesttest.com%2F">
+                        <a href="/url?q=http%3A%2F%2Ftesttest.com%2F">
                             link 2
                         </a>
                     </h3>
                 </li>
                 <li class="g">
                     <h3 class="r">
-                        <a href="/url?url=http%3A%2F%2Fwww.test.com%2F">
+                        <a href="/url?q=http%3A%2F%2Fwww.test.com%2F">
                             link 3
                         </a>
                     </h3>
@@ -101,13 +101,13 @@ class GoogleScraperTest(test.TestCase):
         self.assertEqual(expected_links, links)
 
     def test_parse_href_encoded(self):
-        href = '/url?url=http%3A%2F%2Ftest.com%2F'
+        href = '/url?q=http%3A%2F%2Ftest.com%2F'
         expected_url = 'http://test.com/'
         self.assertEqual(expected_url,
                          self.google_scraper.parse_href(href))
 
     def test_parse_href_unencoded(self):
-        href = '/url?url=http://test.com/'
+        href = '/url?q=http://test.com/'
         expected_url = 'http://test.com/'
         self.assertEqual(expected_url,
                          self.google_scraper.parse_href(href))

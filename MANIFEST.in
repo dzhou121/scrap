@@ -1,0 +1,1 @@
+recursive-include scrap *.css *.js *.html
