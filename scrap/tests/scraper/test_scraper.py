@@ -1,21 +1,36 @@
-from scrap import cache
-
-
-# disable cache before importing scraper classes
-def fake_cache(duration):
-    def decorate(func):
-        def wrapper(self, *args, **kwargs):
-            value = func(self, *args, **kwargs)
-            return value
-        return wrapper
-    return decorate
-
-cache.cache = fake_cache
-
+import redis
 import requests
+import simplejson as json
 
-from scrap.scraper import GoogleScraper, BaiduScraper, BingScraper
+from scrap.scraper.scraper import GoogleScraper, BaiduScraper, BingScraper
 from scrap import test
+
+
+class FakeRedis(object):
+    """ Fake Redis class so that we don't actually call Redis """
+
+    def __init__(self, *args, **kwargs):
+        self.data = {}
+
+    def get(self, key):
+        return self.data.get(key, None)
+
+    def sadd(self, key, value):
+        if key not in self.data:
+            self.data[key] = set()
+
+        self.data[key].add(value)
+        return True
+
+    def smembers(self, key):
+        return self.data.get(key, set())
+
+    def set(self, key, value):
+        self.data[key] = value
+        return True
+
+    def expire(self, key, duration):
+        return True
 
 
 class GoogleScraperTest(test.TestCase):
@@ -23,9 +38,10 @@ class GoogleScraperTest(test.TestCase):
     def setUp(self):
         """Run before each test method to initialize test environment."""
         super(GoogleScraperTest, self).setUp()
+        self.stubs.Set(redis, 'Redis', FakeRedis)
         self.google_scraper = GoogleScraper('test', 'test.com')
 
-    def test_get_links(self):
+    def test_get_links_task_task(self):
         def fake_get_html(page):
             return """
             <html>
@@ -53,22 +69,36 @@ class GoogleScraperTest(test.TestCase):
             </html>
             """
         self.stubs.Set(self.google_scraper, '_get_html', fake_get_html)
+        self.google_scraper.get_links_task(max_pages=1)
         expected_links = [{'rank': 1, 'url': 'http://test.com/'},
                           {'rank': 3, 'url': 'http://www.test.com/'}]
-        self.assertEqual(expected_links,
-                         self.google_scraper.get_links(max_pages=1))
+        links = self.google_scraper.redis_conn.smembers(
+            self.google_scraper.scrap_task_result)
+        links = [json.loads(link) for link in links]
+        if links:
+            links = [(link['rank'], link['url']) for link in links]
+            links.sort()
+            links = [{'rank': link[0], 'url': link[1]} for link in links]
+        self.assertEqual(expected_links, links)
 
-    def test_get_links_connection_error(self):
+    def test_get_links_task_connection_error(self):
         """
         We want the result show DNS error or connection refused
         when it has problems when getting HTTP response
         """
         self.stubs.Set(self.google_scraper,
                        'endpoint', 'http://google_blocked/')
+        self.google_scraper.get_links_task(max_pages=1)
         expected_links = [{'rank': 0,
                            'url': 'DNS error or connection refused'}]
-        self.assertEqual(expected_links,
-                         self.google_scraper.get_links(max_pages=1))
+        links = self.google_scraper.redis_conn.smembers(
+            self.google_scraper.scrap_task_result)
+        links = [json.loads(link) for link in links]
+        if links:
+            links = [(link['rank'], link['url']) for link in links]
+            links.sort()
+            links = [{'rank': link[0], 'url': link[1]} for link in links]
+        self.assertEqual(expected_links, links)
 
     def test_parse_href_encoded(self):
         href = '/url?url=http%3A%2F%2Ftest.com%2F'
@@ -96,9 +126,10 @@ class BaiduScraperTest(test.TestCase):
 
     def setUp(self):
         super(BaiduScraperTest, self).setUp()
+        self.stubs.Set(redis, 'Redis', FakeRedis)
         self.baidu_scraper = BaiduScraper('test', 'test.com')
 
-    def test_get_links(self):
+    def test_get_links_task(self):
         def fake_get_html(page):
             return """
             <html>
@@ -134,17 +165,31 @@ class BaiduScraperTest(test.TestCase):
 
         self.stubs.Set(self.baidu_scraper, '_get_html', fake_get_html)
         self.stubs.Set(self.baidu_scraper, 'parse_href', fake_parse_href)
+        self.baidu_scraper.get_links_task(max_pages=1)
         expected_links = [{'rank': 1, 'url': 'http://test.com/'},
                           {'rank': 3, 'url': 'http://www.test.com/'}]
-        self.assertEqual(expected_links,
-                         self.baidu_scraper.get_links(max_pages=1))
+        links = self.baidu_scraper.redis_conn.smembers(
+            self.baidu_scraper.scrap_task_result)
+        links = [json.loads(link) for link in links]
+        if links:
+            links = [(link['rank'], link['url']) for link in links]
+            links.sort()
+            links = [{'rank': link[0], 'url': link[1]} for link in links]
+        self.assertEqual(expected_links, links)
 
-    def test_get_links_connection_error(self):
+    def test_get_links_task_connection_error(self):
         self.stubs.Set(self.baidu_scraper, 'endpoint', 'http://baidu_blocked/')
+        self.baidu_scraper.get_links_task(max_pages=1)
         expected_links = [{'rank': 0,
                            'url': 'DNS error or connection refused'}]
-        self.assertEqual(expected_links,
-                         self.baidu_scraper.get_links(max_pages=1))
+        links = self.baidu_scraper.redis_conn.smembers(
+            self.baidu_scraper.scrap_task_result)
+        links = [json.loads(link) for link in links]
+        if links:
+            links = [(link['rank'], link['url']) for link in links]
+            links.sort()
+            links = [{'rank': link[0], 'url': link[1]} for link in links]
+        self.assertEqual(expected_links, links)
 
     def test_parse_href(self):
         def fake_get(link, allow_redirects):
@@ -185,9 +230,10 @@ class BingScraperTest(test.TestCase):
 
     def setUp(self):
         super(BingScraperTest, self).setUp()
+        self.stubs.Set(redis, 'Redis', FakeRedis)
         self.bing_scraper = BingScraper('test', 'test.com')
 
-    def test_get_links(self):
+    def test_get_links_task(self):
         def fake_get_html(page):
             return """
             <html>
@@ -217,18 +263,34 @@ class BingScraperTest(test.TestCase):
             </html>
             """
         self.stubs.Set(self.bing_scraper, '_get_html', fake_get_html)
+        self.bing_scraper.get_links_task(max_pages=1)
+
         expected_links = [{'rank': 1, 'url': 'http://test.com/'},
                           {'rank': 3, 'url': 'http://www.test.com/'}]
-        self.assertEqual(expected_links,
-                         self.bing_scraper.get_links(max_pages=1))
+        links = self.bing_scraper.redis_conn.smembers(
+            self.bing_scraper.scrap_task_result)
+        links = [json.loads(link) for link in links]
+        if links:
+            links = [(link['rank'], link['url']) for link in links]
+            links.sort()
+            links = [{'rank': link[0], 'url': link[1]} for link in links]
+        self.assertEqual(expected_links, links)
 
-    def test_get_links_connection_error(self):
+    def test_get_links_task_connection_error(self):
         self.stubs.Set(self.bing_scraper,
                        'endpoint', 'http://google_blocked/')
+        self.bing_scraper.get_links_task(max_pages=1)
+
         expected_links = [{'rank': 0,
                            'url': 'DNS error or connection refused'}]
-        self.assertEqual(expected_links,
-                         self.bing_scraper.get_links(max_pages=1))
+        links = self.bing_scraper.redis_conn.smembers(
+            self.bing_scraper.scrap_task_result)
+        links = [json.loads(link) for link in links]
+        if links:
+            links = [(link['rank'], link['url']) for link in links]
+            links.sort()
+            links = [{'rank': link[0], 'url': link[1]} for link in links]
+        self.assertEqual(expected_links, links)
 
     def test_parse_href(self):
         href = 'http://test.com/'

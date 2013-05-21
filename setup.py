@@ -3,6 +3,7 @@ from setuptools import setup, find_packages
 
 requires = [
     'flask',
+    'flask-restful',
     'requests',
     'lxml',
     'cssselect',
@@ -21,4 +22,9 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=requires,
+    entry_points="""
+    [console_scripts]
+    scrap-scraper = scrap.cmd.scraper:main
+    scrap-api = scrap.cmd.api:main
+    """,
 )
