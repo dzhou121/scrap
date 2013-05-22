@@ -71,6 +71,7 @@ class Scraper(object):
         except requests.Timeout:
             return self._store_link(
                 {'rank': 0, 'url': 'Request times out'})
+
         html_tree = html.fromstring(html_text)
         hyperlinks = html_tree.cssselect(self.search_css)
         # gevent is used here because for Baidu, it needs to get the actual
@@ -101,8 +102,7 @@ class Scraper(object):
 
     def _store_link(self, link):
         """ Store the link result in Redis """
-        link = json.dumps(link)
-        self.redis_conn.sadd(self.scrap_task_result, link)
+        self.redis_conn.sadd(self.scrap_task_result, json.dumps(link))
         return link
 
     def _get_html(self, page):

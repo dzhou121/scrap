@@ -29,10 +29,11 @@ class ScraperManager(object):
             search_engine, keyword, domain = task.split(':')
             scraper_class = getattr(scraper,
                                     '%sScraper' % search_engine.capitalize())
+        # TODO probably log these exceptions
         except ValueError:
-            print 'wrong queue string'
+            pass
         except AttributeError:
-            print 'wrong search engine name'
+            pass
         else:
             scraper_obj = scraper_class(keyword, domain)
             scraper_obj.get_links_task()
