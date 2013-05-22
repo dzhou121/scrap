@@ -13,7 +13,7 @@ Clone the repository::
 Install::
     
     $ cd scrap
-    $ ./install
+    $ sudo ./install
 
 Go to http://your-ip:5000/ and you should see the website
 
@@ -24,7 +24,7 @@ Development
 
 Install dependencies::
 
-    $ yum install python-devel python-virtualenv python-setuptools libxml2-devel libxslt-devel libevent-devel redis
+    $ sudo yum install python-devel python-virtualenv python-setuptools libxml2-devel libxslt-devel libevent-devel redis
 
 Clone the repository::
 
@@ -39,7 +39,7 @@ Create virtual environment::
 
 Start services::
 
-    $ /etc/init.d/redis start
+    $ sudo /etc/init.d/redis start
     $ scrap-api
     $ scrap-scraper
 
