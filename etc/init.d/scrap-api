@@ -7,8 +7,7 @@
 
 prog=scrap-api
 exec="/usr/bin/scrap-api"
-pidfile="/var/run/$prog.pid"
-logfile="/var/log/$prog.log"
+pidfile="/var/run/scrap/$prog.pid"
 
 [ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
 

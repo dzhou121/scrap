@@ -31,7 +31,7 @@ class API(object):
                                   'before access the result')
         links = self.redis_conn.smembers(self.scrap_task_result)
         links = [json.loads(link) for link in links]
-        if links:
+        if len(links) > 1:
             links = [(link['rank'], link['url']) for link in links]
             links.sort()
             links = [{'rank': link[0], 'url': link[1]} for link in links]

@@ -17,12 +17,17 @@ Install::
 
 Go to http://your-ip:5000/ and you should see the website
 
+Note::
+
+    You can deploy scrap-scraper on multiple machines to increase the
+    performance    
+
 Development
 -----------
 
 Install dependencies::
 
-    yum install python-virtualenv redis
+    yum install python-devel python-virtualenv python-setuptools libxml2-devel libxslt-devel libevent-devel redis
 
 Clone the repository::
 
@@ -48,12 +53,42 @@ Running tests::
 Architecture
 ------------
 
+::
+    HTTP Reqeust 
+        |
+        |
+        |
+    scrap-api
+        |
+        |
+        |                 Get results       fetch queue
+    scrap.scraper.api.API <---------> Redis -----------> scrap-scraper
+                         publish queue  ^                      |
+                                        |                      |
+                                        |                      |
+                                        |                ScraperManager
+                                        |                      |
+                                        |                      |
+                                        |                      |
+                                        +---------- Google/Baidu/BingScraper
+                                       Store results
+
+The Restful API is provided by scrap-api, and when a HTTP request comes in, it
+will call scrap.scraper.api.API to get results from Redis, or publish a new
+task to Redis queue.
+
+ScraperManager subscribes Redis pubsub and will consume the new task when there
+is a new message. It will call the actual search engine scrapers to do the
+searches. The scrapers will download the html from search engines, parse the
+results, and store the results to Redis.
 
 Issues And Improvements
 -----------------------
 
-1. For simplicity, the POST in Rest API is put under the actual resource.
-   It should be called against http://localhost:5000/search 
-   other than http://locahost:5000/search/google:test:test.com
+1. Google has a rate limiting and this is not currently addressed.
 
-2. Google has rate limiting and this is not currently addressed
+2. Better configuration control is needed.
+
+3. For simplicity, the POST in Rest API is put under the actual resource.
+   It should be put under http://localhost:5000/search 
+   rather than http://locahost:5000/search/google:test:test.com

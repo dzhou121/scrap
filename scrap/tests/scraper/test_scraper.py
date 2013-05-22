@@ -75,7 +75,7 @@ class GoogleScraperTest(test.TestCase):
         links = self.google_scraper.redis_conn.smembers(
             self.google_scraper.scrap_task_result)
         links = [json.loads(link) for link in links]
-        if links:
+        if len(links) > 1:
             links = [(link['rank'], link['url']) for link in links]
             links.sort()
             links = [{'rank': link[0], 'url': link[1]} for link in links]
@@ -94,7 +94,7 @@ class GoogleScraperTest(test.TestCase):
         links = self.google_scraper.redis_conn.smembers(
             self.google_scraper.scrap_task_result)
         links = [json.loads(link) for link in links]
-        if links:
+        if len(links) > 1:
             links = [(link['rank'], link['url']) for link in links]
             links.sort()
             links = [{'rank': link[0], 'url': link[1]} for link in links]
@@ -171,7 +171,7 @@ class BaiduScraperTest(test.TestCase):
         links = self.baidu_scraper.redis_conn.smembers(
             self.baidu_scraper.scrap_task_result)
         links = [json.loads(link) for link in links]
-        if links:
+        if len(links) > 1:
             links = [(link['rank'], link['url']) for link in links]
             links.sort()
             links = [{'rank': link[0], 'url': link[1]} for link in links]
@@ -185,7 +185,7 @@ class BaiduScraperTest(test.TestCase):
         links = self.baidu_scraper.redis_conn.smembers(
             self.baidu_scraper.scrap_task_result)
         links = [json.loads(link) for link in links]
-        if links:
+        if len(links) > 1:
             links = [(link['rank'], link['url']) for link in links]
             links.sort()
             links = [{'rank': link[0], 'url': link[1]} for link in links]
@@ -270,7 +270,7 @@ class BingScraperTest(test.TestCase):
         links = self.bing_scraper.redis_conn.smembers(
             self.bing_scraper.scrap_task_result)
         links = [json.loads(link) for link in links]
-        if links:
+        if len(links) > 1:
             links = [(link['rank'], link['url']) for link in links]
             links.sort()
             links = [{'rank': link[0], 'url': link[1]} for link in links]
@@ -286,7 +286,7 @@ class BingScraperTest(test.TestCase):
         links = self.bing_scraper.redis_conn.smembers(
             self.bing_scraper.scrap_task_result)
         links = [json.loads(link) for link in links]
-        if links:
+        if len(links) > 1:
             links = [(link['rank'], link['url']) for link in links]
             links.sort()
             links = [{'rank': link[0], 'url': link[1]} for link in links]

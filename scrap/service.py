@@ -1,6 +1,6 @@
 import gevent
 
-from gevent.wsgi import WSGIServer
+from gevent.pywsgi import WSGIServer
 from scrap import settings
 from scrap.scraper import manager
 from scrap.wsgi import app

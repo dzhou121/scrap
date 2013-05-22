@@ -1,23 +1,28 @@
 #!/bin/bash
 
 # Install dependencies
-yum install libevent-devel redis -y
+yum install python-devel python-setuptools libxml2-devel libxslt-devel libevent-devel redis -y
 
 # Create scrap user
-if [ ! id -u scrap >/dev/null 2>&1 ]; then
+if ! id -u scrap >/dev/null 2>&1; then
     useradd -M -u 6000 -s /bin/nologin scrap
 fi
 
+# Create scrap pid folder
+if [ ! -d /var/run/scrap ]; then
+    mkdir /var/run/scrap
+    chown scrap.scrap /var/run/scrap
+fi
 
 # Install python package
 python setup.py install
 
 # Copy init scripts
 if [ ! -f /etc/init.d/scrap-api ]; then
-    cp ./etc/init.d/scrap-api /etc/init/
+    cp ./etc/init.d/scrap-api /etc/init.d/
 fi
 if [ ! -f /etc/init.d/scrap-scraper ]; then
-    cp ./etc/init.d/scrap-scraper /etc/init/
+    cp ./etc/init.d/scrap-scraper /etc/init.d/
 fi
 
 # Start service
