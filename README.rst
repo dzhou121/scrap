@@ -116,7 +116,7 @@ Issues And Improvements
 
 2. Better configuration control is needed.
 
-3. logging facility is need.
+3. logging facility is needed.
 
 4. For simplicity, the POST in Rest API is put under the actual resource.
    It should be put under http://localhost:5000/search 
